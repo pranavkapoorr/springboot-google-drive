@@ -3,6 +3,10 @@ package com.pranavkapoorr.gdriveupload.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,7 +27,9 @@ public class MainController {
 
 	private Logger logger = LoggerFactory.getLogger(MainController.class);
 
-
+	public MainController() {
+		System.err.println(Paths.get("."));
+	}
 	@Autowired
 	DriveService driveService;
 
@@ -55,15 +61,23 @@ public class MainController {
 
 	@PostMapping("/upload")
 	public String uploadFile(HttpServletRequest request,@RequestParam("multipartFile") MultipartFile file) throws Exception {
+		Path filepath = Paths.get(Paths.get(".").toAbsolutePath()+"/tempuploads", file.getOriginalFilename());
+		File filex = null;
+	    try (OutputStream os = Files.newOutputStream(filepath)) {
+	        os.write(file.getBytes());
+	    }finally {
+	    	filex = new File("/tempuploads"+file.getOriginalFilename());
+	    	com.google.api.services.drive.model.File file2  = driveService.upLoadFile(
+	        		filex.getName(), 
+	        		"/tempuploads"+file.getOriginalFilename(),
+	        		file.getContentType());
+			try {
+				System.err.println(file2.toPrettyString());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+	    }
 		
-        com.google.api.services.drive.model.File file2  = driveService.upLoadFile(
-        		file.getName(), 
-        		file.getOriginalFilename(),"image/jpg");
-		try {
-			System.err.println(file2.toPrettyString());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 		return "home.html";
 	}
 }
